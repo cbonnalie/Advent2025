@@ -1,76 +1,61 @@
+from re import split
+
+
 def get_input(filename):
     try:
         with open(filename, 'r') as f:
-            manifold = [
-                list(line.strip())
-                for line in f
-                if line.strip()
-            ]
-
+            return [list(line.strip()) for line in f if line.strip()]
     except FileNotFoundError:
         print(f'Error: {filename} not found')
+        return []
 
-    return manifold
+def find_start_position(manifold):
+    for col, char in enumerate(manifold[0]):
+        if char == 'S':
+            return (0, col)
+    return None
 
+def simulate_beam(manifold, start_row, start_col, rows, processed_splitters):
+    new_beams = []
+    row = start_row
 
+    while row < rows - 1:
+        row += 1
+        cell = manifold[row][start_col]
 
-def initialize(manifold):
-    rows = len(manifold)
-    first_row = manifold[0]
-    cols = len(first_row) 
-    start = 0
-
-    for c in range(len(first_row)):
-        if first_row[c] == 'S':
-            start = (0, c)
+        if cell == '^':
+            splitter_pos = (row, start_col)
+            if splitter_pos not in processed_splitters:
+                processed_splitters.add(splitter_pos)
+                new_beams.append((row, start_col - 1))
+                new_beams.append((row, start_col + 1))
             break
 
-    splitters = []
-
-    for r in range(1, rows):
-        for c in range(cols):
-            if manifold[r][c] == '^':
-                splitters.append((r, c))
-
-    return rows, cols, [start], splitters
+    return new_beams
 
 
+def count_beam_splits(manifold):
+    rows = len(manifold)
+    start_pos = find_start_position(manifold)
 
-def process_splits(manifold, starts, rows):
-    new_splitters = []
-    new_starts = []
-    for line in starts:
-        curr_row, curr_col = line
-        while(curr_row < rows - 1):
-            curr_row += 1
-            if manifold[curr_row][curr_col] == '.':
-                continue
-            if (curr_row, curr_col) not in new_splitters:
-                new_splitters.append((curr_row, curr_col))
-                if (curr_row, curr_col - 1) not in new_starts:
-                    new_starts.append((curr_row, curr_col - 1))
-                if (curr_row, curr_col + 1) not in new_starts:
-                    new_starts.append((curr_row, curr_col + 1))
-                break
+    processed_splitters = set()
+    active_beams = [start_pos]
 
-    return new_starts, new_splitters
+    while active_beams:
+        next_beams = []
+        for beam_row, beam_col in active_beams:
+            new_beams = simulate_beam(manifold, beam_row, beam_col, rows, processed_splitters)
+            next_beams.extend(new_beams)
+
+        active_beams = next_beams
+
+    return len(processed_splitters)
 
 
 def main():
     manifold = get_input('input.txt')
-
-    rows, cols, starts, all_splitters = initialize(manifold)
-    print(f'rows: {rows}\ncols: {cols}\nstart: {starts}\n{all_splitters}')
-
-    found_splitters = set()
-
-    while(len(starts) > 0):
-        starts, new_splitters = process_splits(manifold, starts, rows)
-        for new_splitter in new_splitters:
-            found_splitters.add(new_splitter)
-
-    print(found_splitters)
-    print(len(found_splitters))
+    split_count = count_beam_splits(manifold)
+    print(split_count)
 
 
 if __name__ == '__main__':
