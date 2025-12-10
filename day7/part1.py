@@ -1,6 +1,3 @@
-from re import split
-
-
 def get_input(filename):
     try:
         with open(filename, 'r') as f:
@@ -9,52 +6,38 @@ def get_input(filename):
         print(f'Error: {filename} not found')
         return []
 
+
 def find_start_position(manifold):
     for col, char in enumerate(manifold[0]):
         if char == 'S':
-            return (0, col)
+            return col
     return None
 
-def simulate_beam(manifold, start_row, start_col, rows, processed_splitters):
-    new_beams = []
-    row = start_row
 
-    while row < rows - 1:
-        row += 1
-        cell = manifold[row][start_col]
-
-        if cell == '^':
-            splitter_pos = (row, start_col)
-            if splitter_pos not in processed_splitters:
-                processed_splitters.add(splitter_pos)
-                new_beams.append((row, start_col - 1))
-                new_beams.append((row, start_col + 1))
-            break
-
-    return new_beams
-
-
-def count_beam_splits(manifold):
+def find_hit_splitters(manifold, start_col):
+    beam_index = [0] * len(manifold)
+    beam_index[start_col] = 1
+    
     rows = len(manifold)
-    start_pos = find_start_position(manifold)
+    cols = len(manifold[0])
 
-    processed_splitters = set()
-    active_beams = [start_pos]
+    split_count = 0
 
-    while active_beams:
-        next_beams = []
-        for beam_row, beam_col in active_beams:
-            new_beams = simulate_beam(manifold, beam_row, beam_col, rows, processed_splitters)
-            next_beams.extend(new_beams)
+    for r in range(1, rows):
+        for c in range(cols):
+            if manifold[r][c] == '^' and beam_index[c] == 1:
+                split_count += 1
+                beam_index[c-1] = 1
+                beam_index[c] = 0
+                beam_index[c+1] = 1
 
-        active_beams = next_beams
-
-    return len(processed_splitters)
+    return split_count
 
 
 def main():
     manifold = get_input('input.txt')
-    split_count = count_beam_splits(manifold)
+    start_col = find_start_position(manifold)
+    split_count = find_hit_splitters(manifold, start_col)    
     print(split_count)
 
 
